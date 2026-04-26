@@ -7,8 +7,8 @@
 // @match        *://*.youtube.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/hsungo/youtube-tools/main/ad-skipper.user.js
-// @downloadURL  https://raw.githubusercontent.com/hsungo/youtube-tools/main/ad-skipper.user.js
+// @updateURL    https://raw.githubusercontent.com/hsungo/youtubeADB/main/adb.user.js
+// @downloadURL  https://raw.githubusercontent.com/hsungo/youtubeADB/main/adb.user.js
 // @license      MIT
 // ==/UserScript==
 
