@@ -12,57 +12,49 @@
 // @license      MIT
 // ==/UserScript==
 
-(function(){
+(function() {
     'use strict';
-    let lastRun=0,lastSkip=0,isMutedByScript=false,originalPlaybackRate=1,wasAdShowing=false;
+    let last=0, mute=false, rate=1, was=false;
+    const selectors = ['.ytp-skip-ad-button', '.ytp-ad-skip-button', '.ytp-ad-skip-button-modern', 'button[aria-label*="Skip"]', 'button[id^="skip-button:"]'];
 
-    const triggerRealClick=e=>{
-        const r=e.getBoundingClientRect();
-        if(r.width===0||r.height===0)return;
-        if(typeof e.click==='function')e.click();
-        const cx=r.left+r.width/2,cy=r.top+r.height/2;
-        ['pointerover','mouseover','pointerdown','mousedown','pointerup','mouseup','click'].forEach(t=>{
-            e.dispatchEvent(new MouseEvent(t,{bubbles:true,cancelable:true,view:window,buttons:1,clientX:cx,clientY:cy}));
-        });
-    };
+    const run = () => {
+        const v = document.querySelector('video'), p = document.querySelector('.html5-video-player');
+        if (!v || !p) return;
+        const isAd = p.classList.contains('ad-showing') || document.querySelector('.ad-interrupting');
 
-    const handleAds=()=>{
-        const now=Date.now();
-        if(now-lastRun<300)return;
-        lastRun=now;
-        const v=document.querySelector('video'),p=document.querySelector('.html5-video-player');
-        if(!v||!p)return;
-
-        if(!(p.classList.contains('ad-showing')||document.querySelector('.ad-interrupting'))){
-            if(wasAdShowing){
-                if(isMutedByScript&&v.muted){v.muted=false;isMutedByScript=false;}
-                if(v.playbackRate!==originalPlaybackRate)v.playbackRate=originalPlaybackRate;
-                wasAdShowing=false;
-            }else if(v.playbackRate>0&&v.playbackRate<=4){
-                originalPlaybackRate=v.playbackRate;
-            }
+        if (!isAd) {
+            if (was) {
+                if (mute && v.muted) v.muted = false;
+                if (v.playbackRate !== rate) v.playbackRate = rate;
+                if (v.paused) v.play().catch(()=>{});
+                was = mute = false;
+            } else if (v.playbackRate <= 4) rate = v.playbackRate;
             return;
         }
 
-        wasAdShowing=true;
-        if(!v.muted){v.muted=true;isMutedByScript=true;}
-        if(v.duration&&v.currentTime<v.duration-0.5){
-            v.currentTime=v.duration-0.1;
-            v.playbackRate=16;
-            v.dispatchEvent(new Event('ended'));
+        was = true;
+        if (!v.muted) { v.muted = true; mute = true; }
+
+        if (isFinite(v.duration)) {
+            if (v.currentTime < v.duration - 0.2) {
+                v.currentTime = v.duration - 0.1;
+                v.playbackRate = 16;
+            } else v.pause();
         }
 
-        const btn=document.querySelector('.ytp-skip-ad-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern, button[aria-label*="Skip"], button[id^="skip-button:"]');
-        if(btn&&btn.offsetParent!==null&&now-lastSkip>1000){
-            triggerRealClick(btn);
-            lastSkip=now;
-        }
+        let btn = null;
+        for (const s of selectors) if ((btn = document.querySelector(s)) && btn.offsetParent) break;
 
-        const banner=document.querySelector('.ytp-ad-overlay-close-button');
-        if(banner)triggerRealClick(banner);
+        const now = Date.now();
+        if (btn && now - last > 500) {
+            btn.click();
+            ['mousedown', 'mouseup'].forEach(t => btn.dispatchEvent(new MouseEvent(t, {bubbles:true})));
+            last = now;
+            v.play().catch(()=>{});
+        }
     };
 
-    new MutationObserver(handleAds).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class','hidden']});
-    const loop=()=>{handleAds();requestAnimationFrame(loop);};
+    new MutationObserver(run).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+    const loop = () => { run(); requestAnimationFrame(loop); };
     loop();
 })();
