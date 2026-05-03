@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         youtube ad skipper
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  my youtube adb
 // @author       hsungo
 // @match        *://*.youtube.com/*
@@ -37,7 +37,7 @@
 
         if (isFinite(v.duration)) {
             if (v.currentTime < v.duration - 0.2) {
-                v.currentTime = v.duration - 0.1;
+                v.currentTime = v.duration + 0.1;
                 v.playbackRate = 16;
             } else v.pause();
         }
